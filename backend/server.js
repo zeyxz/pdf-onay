@@ -20,7 +20,9 @@ app.use(session({
     saveUninitialized: true
 }));
 
+// =====================
 // 🔒 LOGIN KONTROL
+// =====================
 function auth(req, res, next) {
     if (req.session.loggedIn) {
         next();
@@ -29,28 +31,28 @@ function auth(req, res, next) {
     }
 }
 
-// 📁 STATIC
-app.use(express.static(path.join(__dirname, "../frontend")));
-
 // =====================
-// ROUTES
+// 🏠 ROUTES (STATIC’TEN ÖNCE!)
 // =====================
 
+// Ana sayfa → login
 app.get("/", (req, res) => {
-    res.redirect("/admin");
+    res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
+// login sayfası
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
+// login işlemi
 app.post("/login", (req, res) => {
     const { username, password } = req.body;
 
-    if  (
-    username === process.env.ADMIN_USER &&
-    password === process.env.ADMIN_PASS
-) {
+    if (
+        username === process.env.ADMIN_USER &&
+        password === process.env.ADMIN_PASS
+    ) {
         req.session.loggedIn = true;
         return res.json({ success: true });
     }
@@ -58,21 +60,29 @@ app.post("/login", (req, res) => {
     res.json({ success: false });
 });
 
+// logout
 app.get("/logout", (req, res) => {
     req.session.destroy();
     res.redirect("/admin");
 });
 
+// 🔒 ADMIN PANEL
 app.get("/upload-page", auth, (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/admin.html"));
 });
 
+// 📄 MÜŞTERİ PDF SAYFASI (PUBLIC)
 app.get("/form", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 // =====================
-// MULTER
+// 📁 STATIC (EN SON!)
+// =====================
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+// =====================
+// 📤 MULTER (UPLOAD)
 // =====================
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -86,7 +96,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 🔒 PDF YÜKLE
+// 🔒 PDF YÜKLE (ADMIN)
 app.post("/upload", auth, upload.single("pdf"), (req, res) => {
     const fileName = req.file.filename;
     const link = `${req.protocol}://${req.get("host")}/form?pdf=${fileName}`;
@@ -94,7 +104,7 @@ app.post("/upload", auth, upload.single("pdf"), (req, res) => {
 });
 
 // =====================
-// PDF İŞLEME
+// 📄 PDF İŞLEME
 // =====================
 async function pdfOnayEkle(pdfPath) {
     const existingPdfBytes = fs.readFileSync(pdfPath);
@@ -128,12 +138,12 @@ async function pdfOnayEkle(pdfPath) {
 }
 
 // =====================
-// TEK KULLANIMLIK LINK
+// 🔁 TEK KULLANIMLIK LINK
 // =====================
 const kullanilanlar = new Set();
 
 // =====================
-// MAIL
+// 📧 MAIL
 // =====================
 app.post("/send-mail", async (req, res) => {
     const { pdf } = req.body;
@@ -155,7 +165,6 @@ app.post("/send-mail", async (req, res) => {
 
         const pdfBuffer = await pdfOnayEkle(originalPath);
 
-        // 🔥 ENV KULLANILIYOR
         let transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -187,7 +196,7 @@ app.post("/send-mail", async (req, res) => {
 });
 
 // =====================
-// SERVER
+// 🚀 SERVER
 // =====================
 const PORT = process.env.PORT || 3000;
 
