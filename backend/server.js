@@ -229,7 +229,9 @@ app.post("/send-mail", async (req, res) => {
         res.status(500).send(err.message);
     }
 });
-
+app.get("/ping", (req, res) => {
+    res.send("ok");
+});
 
 // =====================
 // 🚀 SERVER
