@@ -1,0 +1,97 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background: #eaf4ff;
+    margin: 0;
+    height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* KART */
+.container {
+    width: 90%;
+    max-width: 400px;
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* BAŞLIK */
+h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+/* 📁 DOSYA INPUT (ASIL OLAY BURADA) */
+.file-input {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.file-input input {
+    display: none;
+}
+
+.file-label {
+    display: block;
+    padding: 12px;
+    background: #f0f7ff;
+    border: 1px solid #cfe3ff;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+}
+
+.file-label:hover {
+    background: #e0efff;
+}
+
+/* BUTON */
+button {
+    width: 100%;
+    padding: 12px;
+    background: #4da6ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #2f80ed;
+}
+
+/* LINK */
+.link-box {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f5faff;
+    border: 1px solid #d6eaff;
+    border-radius: 8px;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+/* COPY */
+.copy-btn {
+    margin-top: 10px;
+    background: #eaf4ff;
+    color: #2f80ed;
+}
+
+.copy-btn:hover {
+    background: #d6eaff;
+}
+
+/* DURUM */
+#durum {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #555;
+}

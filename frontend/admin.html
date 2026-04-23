@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- 📱 Mobil uyum -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Panel</title>
+
+    <!-- 🎨 CSS -->
+    <link rel="stylesheet" href="/css/admin.css">
+
+    <!-- 🔐 Login kontrol -->
+    <script>
+        if (localStorage.getItem("auth") !== "true") {
+            window.location.href = "/login.html";
+        }
+    </script>
+
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>PDF Yükle</h2>
+
+    <p class="desc">Müşteriye göndermek için PDF yükleyin</p>
+
+   <div class="file-input">
+    <input type="file" id="pdfFile" accept="application/pdf">
+    <label for="pdfFile" class="file-label">PDF Seç</label>
+</div>
+
+
+    <button onclick="yukle()">Yükle ve Link Oluştur</button>
+
+    <p id="link"></p>
+    <div id="linkContainer" style="display:none;">
+    
+    <button class="copy-btn" onclick="kopyala()">Linki Kopyala</button>
+</div>
+
+    <p id="durum"></p>
+
+</div>
+
+<script src="admin.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- 📱 mobil -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Giriş</title>
+
+    <!-- 🎨 CSS -->
+    <link rel="stylesheet" href="/css/login.css">
+
+    <!-- 🔤 font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Admin Giriş</h2>
+
+    <input type="text" id="username" placeholder="Kullanıcı adı">
+    <input type="password" id="password" placeholder="Şifre">
+
+    <button onclick="giris()">Giriş Yap</button>
+
+    <p id="durum"></p>
+
+</div>
+
+<script>
+function logYaz(mesaj, renk="red") {
+    const d = document.getElementById("durum");
+    d.innerText = mesaj;
+    d.style.color = renk;
+}
+
+function giris() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+        logYaz("Tüm alanları doldurun ❗");
+        return;
+    }
+
+    logYaz("Giriş yapılıyor...", "#555");
+
+    fetch("/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem("auth", "true");
+            window.location.href = "/admin.html";
+        } else {
+            logYaz("Hatalı giriş ❌");
+        }
+    })
+    .catch(() => {
+        logYaz("Sunucu hatası ❌");
+    });
+}
+</script>
+
+</body>
+</html>
