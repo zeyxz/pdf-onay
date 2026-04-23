@@ -6,7 +6,7 @@ if (!pdf) {
     document.getElementById("durum").innerText = "PDF bulunamadı ❌";
 } else {
     // PDF göster
-    document.getElementById("pdfFrame").src = `/pdf/${pdf}`;
+    document.getElementById("pdfFrame").src = `/scrty/pdf/${pdf}`;
 }
 
 // mesaj yazdır
