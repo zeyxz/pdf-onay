@@ -59,7 +59,7 @@ function giris() {
     .then(data => {
         if (data.success) {
             localStorage.setItem("auth", "true");
-            window.location.href = "/admin.html";
+            window.location.href = "/upload-page";
         } else {
             logYaz("Hatalı giriş ❌");
         }

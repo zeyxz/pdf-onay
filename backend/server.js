@@ -13,29 +13,34 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// 🔐 SESSION
-app.use(session({
-    secret: process.env.SESSION_SECRET || "gizliAnahtar123",
-    resave: false,
-    saveUninitialized: true
-}));
 
 // =====================
-// 🔒 LOGIN KONTROL
+// 🔐 SESSION (login hafızası)
+// =====================
+app.use(session({
+    secret: process.env.SESSION_SECRET || "gizliAnahtar",
+    resave: false,
+    saveUninitialized: false
+}));
+
+
+// =====================
+// 🔒 LOGIN KONTROL (middleware)
 // =====================
 function auth(req, res, next) {
     if (req.session.loggedIn) {
-        next();
+        next(); // giriş yaptıysa devam et
     } else {
-        res.redirect("/admin");
+        res.redirect("/admin"); // yapmadıysa login'e at
     }
 }
 
+
 // =====================
-// 🏠 ROUTES (STATIC’TEN ÖNCE!)
+// 🏠 SAYFA ROUTELARI
 // =====================
 
-// Ana sayfa → login
+// Ana sayfa → login ekranı
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
@@ -53,36 +58,53 @@ app.post("/login", (req, res) => {
         username === process.env.ADMIN_USER &&
         password === process.env.ADMIN_PASS
     ) {
-        req.session.loggedIn = true;
+        req.session.loggedIn = true; // giriş başarılı
         return res.json({ success: true });
     }
 
     res.json({ success: false });
 });
 
-// logout
+// çıkış
 app.get("/logout", (req, res) => {
     req.session.destroy();
     res.redirect("/admin");
 });
 
-// 🔒 ADMIN PANEL
+
+// =====================
+// 🔒 ADMIN PANEL (korumalı)
+// =====================
 app.get("/upload-page", auth, (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/admin.html"));
 });
 
-// 📄 MÜŞTERİ PDF SAYFASI (PUBLIC)
+
+// =====================
+// 📄 MÜŞTERİ SAYFASI (public)
+// =====================
 app.get("/form", (req, res) => {
+    const pdf = req.query.pdf;
+
+    // link daha önce kullanıldıysa engelle
+    if (kullanilanlar.has(pdf)) {
+        return res.send("Bu link artık geçersiz.");
+    }
+
     res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
-// =====================
-// 📁 STATIC (EN SON!)
-// =====================
-app.use(express.static(path.join(__dirname, "../frontend")));
 
 // =====================
-// 📤 MULTER (UPLOAD)
+// 📁 STATIC DOSYALAR
+// =====================
+// ❗ Artık direkt /admin.html açılamaz
+// sadece /scrty/... üzerinden erişilir
+app.use("/scrty", express.static(path.join(__dirname, "../frontend")));
+
+
+// =====================
+// 📤 DOSYA YÜKLEME
 // =====================
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -96,12 +118,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 🔒 PDF YÜKLE (ADMIN)
+
+// =====================
+// 🔒 PDF YÜKLE (admin)
+// =====================
 app.post("/upload", auth, upload.single("pdf"), (req, res) => {
     const fileName = req.file.filename;
+
+    // dinamik link (render uyumlu)
     const link = `${req.protocol}://${req.get("host")}/form?pdf=${fileName}`;
+
     res.json({ link });
 });
+
 
 // =====================
 // 📄 PDF İŞLEME
@@ -137,21 +166,25 @@ async function pdfOnayEkle(pdfPath) {
     return await pdfDoc.save();
 }
 
+
 // =====================
 // 🔁 TEK KULLANIMLIK LINK
 // =====================
 const kullanilanlar = new Set();
 
+
 // =====================
-// 📧 MAIL
+// 📧 MAIL + ONAY
 // =====================
 app.post("/send-mail", async (req, res) => {
     const { pdf } = req.body;
 
+    // geçersiz kontrol
     if (!pdf || !pdf.endsWith(".pdf")) {
         return res.status(400).send("Geçersiz PDF");
     }
 
+    // ikinci kullanım engelle
     if (kullanilanlar.has(pdf)) {
         return res.status(400).send("Bu link zaten kullanıldı");
     }
@@ -165,6 +198,7 @@ app.post("/send-mail", async (req, res) => {
 
         const pdfBuffer = await pdfOnayEkle(originalPath);
 
+        // mail gönder
         let transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
@@ -186,6 +220,7 @@ app.post("/send-mail", async (req, res) => {
             ]
         });
 
+        // kullanıldı olarak işaretle
         kullanilanlar.add(pdf);
 
         res.send("Onaylı PDF gönderildi");
@@ -194,6 +229,7 @@ app.post("/send-mail", async (req, res) => {
         res.status(500).send(err.message);
     }
 });
+
 
 // =====================
 // 🚀 SERVER
