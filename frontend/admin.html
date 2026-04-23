@@ -9,12 +9,12 @@
     <title>Admin Panel</title>
 
     <!-- 🎨 CSS -->
-    <link rel="stylesheet" href="/css/admin.css">
+    <link rel="stylesheet" href="/scrty/css/admin.css">
 
     <!-- 🔐 Login kontrol -->
     <script>
         if (localStorage.getItem("auth") !== "true") {
-            window.location.href = "/login.html";
+            window.location.href = "/admin";
         }
     </script>
 
@@ -47,7 +47,7 @@
 
 </div>
 
-<script src="admin.js"></script>
+<script src="/scrty/admin.js"></script>
 
 </body>
 </html>
