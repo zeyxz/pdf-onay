@@ -230,23 +230,25 @@ app.post("/send-mail", async (req, res) => {
 
         console.log("MAIL GÖNDERİLİYOR");
 
-        await resend.emails.send({
+        const result = await resend.emails.send({
 
-            from: "onboarding@resend.dev",
+    from: "onboarding@resend.dev",
 
-            to: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER,
 
-            subject: "PDF Onaylandı",
+    subject: "PDF Onaylandı",
 
-            text: `PDF: ${pdf}`,
+    text: `PDF: ${pdf}`,
 
-            attachments: [
-                {
-                    filename: "onayli.pdf",
-                    content: Buffer.from(pdfBuffer).toString("base64")
-                }
-            ]
-        });
+    attachments: [
+        {
+            filename: "onayli.pdf",
+            content: Buffer.from(pdfBuffer).toString("base64")
+        }
+    ]
+});
+
+console.log(result);
 
         console.log("MAIL GÖNDERİLDİ");
 
