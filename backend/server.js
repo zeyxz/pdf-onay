@@ -259,6 +259,49 @@ app.post("/send-mail", async (req, res) => {
         res.status(500).send(err.message);
     }
 });
+app.get("/ping", (req, res) => {
+    res.send("ok");
+});
+
+app.get("/test", (req, res) => {
+    res.send("backend çalışıyor");
+});
+
+app.get("/mail-test", async (req, res) => {
+
+    try {
+
+        let transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 587,
+            secure: false,
+            requireTLS: true,
+            connectionTimeout: 30000,
+
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+
+        await transporter.verify();
+
+        res.send("SMTP OK");
+
+    } catch (err) {
+
+        console.log("SMTP TEST HATASI");
+        console.log(err);
+
+        res.send("SMTP HATA");
+    }
+});
+
+
 // =====================
 // 🚀 SERVER
 // =====================
