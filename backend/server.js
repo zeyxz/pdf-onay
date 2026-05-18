@@ -177,26 +177,40 @@ const kullanilanlar = new Set();
 // 📧 MAIL + ONAY
 // =====================
 app.post("/send-mail", async (req, res) => {
+    console.log("SEND-MAIL ÇALIŞTI");
+
     const { pdf } = req.body;
+
+    console.log("GELEN PDF:", pdf);
 
     // geçersiz kontrol
     if (!pdf || !pdf.endsWith(".pdf")) {
+        console.log("PDF GEÇERSİZ");
         return res.status(400).send("Geçersiz PDF");
     }
 
     // ikinci kullanım engelle
     if (kullanilanlar.has(pdf)) {
+        console.log("LINK ZATEN KULLANILMIŞ");
         return res.status(400).send("Bu link zaten kullanıldı");
     }
 
     try {
+
         const originalPath = path.join(__dirname, "..", "frontend", "pdf", pdf);
 
+        console.log("PDF PATH:", originalPath);
+
         if (!fs.existsSync(originalPath)) {
+            console.log("PDF BULUNAMADI");
             return res.status(404).send("PDF bulunamadı");
         }
 
+        console.log("PDF İŞLENİYOR");
+
         const pdfBuffer = await pdfOnayEkle(originalPath);
+
+        console.log("MAIL TRANSPORT OLUŞUYOR");
 
         // mail gönder
         let transporter = nodemailer.createTransport({
@@ -207,7 +221,9 @@ app.post("/send-mail", async (req, res) => {
             }
         });
 
-        await transporter.sendMail({
+        console.log("MAIL GÖNDERİLİYOR");
+
+        const info = await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
             subject: "PDF Onaylandı",
@@ -220,19 +236,22 @@ app.post("/send-mail", async (req, res) => {
             ]
         });
 
+        console.log("MAIL GÖNDERİLDİ");
+        console.log(info);
+
         // kullanıldı olarak işaretle
         kullanilanlar.add(pdf);
 
         res.send("Onaylı PDF gönderildi");
 
     } catch (err) {
+
+        console.log("MAIL HATASI");
+        console.log(err);
+
         res.status(500).send(err.message);
     }
 });
-app.get("/ping", (req, res) => {
-    res.send("ok");
-});
-
 // =====================
 // 🚀 SERVER
 // =====================
