@@ -236,7 +236,7 @@ app.post("/send-mail", async (req, res) => {
 
     to: process.env.EMAIL_USER,
 
-    subject: "PDF Onaylandı",
+    subject: `PDF Onayı - ${Date.now()}`,
 
     text: `PDF: ${pdf}`,
 
