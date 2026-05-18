@@ -1,5 +1,4 @@
 const express = require("express");
-const nodemailer = require("nodemailer");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
@@ -7,18 +6,18 @@ const crypto = require("crypto");
 const fs = require("fs");
 const session = require("express-session");
 const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
+const { Resend } = require("resend");
 
 const app = express();
-const dns = require("dns");
 
-dns.setDefaultResultOrder("ipv4first");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.use(express.json());
 app.use(cors());
 
 
 // =====================
-// 🔐 SESSION (login hafızası)
+// 🔐 SESSION
 // =====================
 app.use(session({
     secret: process.env.SESSION_SECRET || "gizliAnahtar",
@@ -28,13 +27,14 @@ app.use(session({
 
 
 // =====================
-// 🔒 LOGIN KONTROL (middleware)
+// 🔒 LOGIN KONTROL
 // =====================
 function auth(req, res, next) {
+
     if (req.session.loggedIn) {
-        next(); // giriş yaptıysa devam et
+        next();
     } else {
-        res.redirect("/admin"); // yapmadıysa login'e at
+        res.redirect("/admin");
     }
 }
 
@@ -43,32 +43,35 @@ function auth(req, res, next) {
 // 🏠 SAYFA ROUTELARI
 // =====================
 
-// Ana sayfa → login ekranı
+// Ana sayfa
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
-// login sayfası
+// Login sayfası
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
-// login işlemi
+// Login işlemi
 app.post("/login", (req, res) => {
+
     const { username, password } = req.body;
 
     if (
         username === process.env.ADMIN_USER &&
         password === process.env.ADMIN_PASS
     ) {
-        req.session.loggedIn = true; // giriş başarılı
+
+        req.session.loggedIn = true;
+
         return res.json({ success: true });
     }
 
     res.json({ success: false });
 });
 
-// çıkış
+// Çıkış
 app.get("/logout", (req, res) => {
     req.session.destroy();
     res.redirect("/admin");
@@ -76,7 +79,7 @@ app.get("/logout", (req, res) => {
 
 
 // =====================
-// 🔒 ADMIN PANEL (korumalı)
+// 🔒 ADMIN PANEL
 // =====================
 app.get("/upload-page", auth, (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/admin.html"));
@@ -84,12 +87,12 @@ app.get("/upload-page", auth, (req, res) => {
 
 
 // =====================
-// 📄 MÜŞTERİ SAYFASI (public)
+// 📄 MÜŞTERİ SAYFASI
 // =====================
 app.get("/form", (req, res) => {
+
     const pdf = req.query.pdf;
 
-    // link daha önce kullanıldıysa engelle
     if (kullanilanlar.has(pdf)) {
         return res.send("Bu link artık geçersiz.");
     }
@@ -101,8 +104,6 @@ app.get("/form", (req, res) => {
 // =====================
 // 📁 STATIC DOSYALAR
 // =====================
-// ❗ Artık direkt /admin.html açılamaz
-// sadece /scrty/... üzerinden erişilir
 app.use("/scrty", express.static(path.join(__dirname, "../frontend")));
 
 
@@ -110,9 +111,11 @@ app.use("/scrty", express.static(path.join(__dirname, "../frontend")));
 // 📤 DOSYA YÜKLEME
 // =====================
 const storage = multer.diskStorage({
+
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, "../frontend/pdf"));
     },
+
     filename: (req, file, cb) => {
         const uniqueName = crypto.randomBytes(8).toString("hex") + ".pdf";
         cb(null, uniqueName);
@@ -123,12 +126,12 @@ const upload = multer({ storage });
 
 
 // =====================
-// 🔒 PDF YÜKLE (admin)
+// 🔒 PDF YÜKLE
 // =====================
 app.post("/upload", auth, upload.single("pdf"), (req, res) => {
+
     const fileName = req.file.filename;
 
-    // dinamik link (render uyumlu)
     const link = `${req.protocol}://${req.get("host")}/form?pdf=${fileName}`;
 
     res.json({ link });
@@ -139,14 +142,19 @@ app.post("/upload", auth, upload.single("pdf"), (req, res) => {
 // 📄 PDF İŞLEME
 // =====================
 async function pdfOnayEkle(pdfPath) {
+
     const existingPdfBytes = fs.readFileSync(pdfPath);
+
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
     const pages = pdfDoc.getPages();
+
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     const tarih = new Date().toLocaleString();
 
     pages.forEach(page => {
+
         const { width } = page.getSize();
 
         page.drawText("SMS YOLUYLA ONAYLANMISTIR.", {
@@ -180,6 +188,7 @@ const kullanilanlar = new Set();
 // 📧 MAIL + ONAY
 // =====================
 app.post("/send-mail", async (req, res) => {
+
     console.log("SEND-MAIL ÇALIŞTI");
 
     const { pdf } = req.body;
@@ -188,13 +197,17 @@ app.post("/send-mail", async (req, res) => {
 
     // geçersiz kontrol
     if (!pdf || !pdf.endsWith(".pdf")) {
+
         console.log("PDF GEÇERSİZ");
+
         return res.status(400).send("Geçersiz PDF");
     }
 
     // ikinci kullanım engelle
     if (kullanilanlar.has(pdf)) {
+
         console.log("LINK ZATEN KULLANILMIŞ");
+
         return res.status(400).send("Bu link zaten kullanıldı");
     }
 
@@ -205,7 +218,9 @@ app.post("/send-mail", async (req, res) => {
         console.log("PDF PATH:", originalPath);
 
         if (!fs.existsSync(originalPath)) {
+
             console.log("PDF BULUNAMADI");
+
             return res.status(404).send("PDF bulunamadı");
         }
 
@@ -213,41 +228,27 @@ app.post("/send-mail", async (req, res) => {
 
         const pdfBuffer = await pdfOnayEkle(originalPath);
 
-        console.log("MAIL TRANSPORT OLUŞUYOR");
-
-        // mail gönder
-        let transporter = nodemailer.createTransport({
-           host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-      requireTLS: true,
-      connectionTimeout:30000,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-              tls: {
-        rejectUnauthorized: false
-    }
-        });
-
         console.log("MAIL GÖNDERİLİYOR");
 
-        const info = await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+
+            from: "onboarding@resend.dev",
+
             to: process.env.EMAIL_USER,
+
             subject: "PDF Onaylandı",
+
             text: `PDF: ${pdf}`,
+
             attachments: [
                 {
                     filename: "onayli.pdf",
-                    content: pdfBuffer
+                    content: Buffer.from(pdfBuffer).toString("base64")
                 }
             ]
         });
 
         console.log("MAIL GÖNDERİLDİ");
-        console.log(info);
 
         // kullanıldı olarak işaretle
         kullanilanlar.add(pdf);
@@ -257,51 +258,23 @@ app.post("/send-mail", async (req, res) => {
     } catch (err) {
 
         console.log("MAIL HATASI");
+
         console.log(err);
 
         res.status(500).send(err.message);
     }
 });
+
+
+// =====================
+// 🧪 TEST ROUTELARI
+// =====================
 app.get("/ping", (req, res) => {
     res.send("ok");
 });
 
 app.get("/test", (req, res) => {
     res.send("backend çalışıyor");
-});
-
-app.get("/mail-test", async (req, res) => {
-
-    try {
-
-        let transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            requireTLS: true,
-            connectionTimeout: 30000,
-
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-
-        await transporter.verify();
-
-        res.send("SMTP OK");
-
-    } catch (err) {
-
-        console.log("SMTP TEST HATASI");
-        console.log(err);
-
-        res.send("SMTP HATA");
-    }
 });
 
 
