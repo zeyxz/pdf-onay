@@ -9,6 +9,9 @@ const session = require("express-session");
 const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
 
 const app = express();
+const dns = require("dns");
+
+dns.setDefaultResultOrder("ipv4first");
 
 app.use(express.json());
 app.use(cors());
